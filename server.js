@@ -3,7 +3,7 @@ const axios = require("axios");
 const cors = require("cors");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -15,220 +15,243 @@ class MyAIImageCreator {
       {
         name: "Pollinations AI",
         generate: async (prompt) => {
-          return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024`;
+          return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512`;
         }
       },
       {
         name: "CatAI", 
         generate: async (prompt) => {
-          return `https://image.catai.me/api/generate?prompt=${encodeURIComponent(prompt)}&width=1024&height=1024`;
-        }
-      },
-      {
-        name: "Prodia",
-        generate: async (prompt) => {
-          // Enhanced prompt for better quality
-          const enhanced = `${prompt}, high quality, detailed, realistic`;
-          return `https://api.prodia.com/v1/sd/generate?prompt=${encodeURIComponent(enhanced)}&model=realisticVisionV50_v50VAE.safetensors`;
+          return `https://image.catai.me/api/generate?prompt=${encodeURIComponent(prompt)}&width=512&height=512`;
         }
       }
     ];
   }
 
-  // Your AI's image generation logic
   async generateImage(prompt) {
     console.log(`🤖 My AI is creating image: "${prompt}"`);
+    const enhancedPrompt = `${prompt}, high quality, detailed, professional`;
     
-    // Enhance the prompt (like Gemini would)
-    const enhancedPrompt = await this.enhancePrompt(prompt);
-    
-    // Try services in order
     for (let service of this.services) {
       try {
-        console.log(`🔄 Trying ${service.name}...`);
         const imageUrl = await service.generate(enhancedPrompt);
-        
         return {
           success: true,
           image: imageUrl,
           source: service.name,
           enhanced_prompt: enhancedPrompt,
-          created_by: "My AI Image Creator",
-          timestamp: new Date().toISOString()
+          created_by: "My AI Image Creator"
         };
       } catch (error) {
-        console.log(`❌ ${service.name} failed, trying next...`);
         continue;
       }
     }
-    
     throw new Error("All image services are busy");
-  }
-
-  // Your AI's prompt enhancement (like Gemini)
-  async enhancePrompt(originalPrompt) {
-    const enhancements = [
-      "high quality, detailed, professional",
-      "ultra realistic, 4K resolution", 
-      "sharp focus, professional photography",
-      "cinematic lighting, highly detailed"
-    ];
-    
-    const randomEnhancement = enhancements[Math.floor(Math.random() * enhancements.length)];
-    return `${originalPrompt}, ${randomEnhancement}`;
   }
 }
 
-// Initialize your AI
 const myAI = new MyAIImageCreator();
 
-// Your AI's API endpoints
+// API Routes
 app.post("/ai/generate", async (req, res) => {
   const { prompt } = req.body;
   
   if (!prompt) {
-    return res.status(400).json({ 
-      error: "Prompt is required for my AI to create images" 
-    });
+    return res.status(400).json({ error: "Prompt is required" });
   }
 
   try {
-    console.log(`🎨 My AI received request: "${prompt}"`);
-    
     const result = await myAI.generateImage(prompt);
-    
-    res.json({
-      ...result,
-      ai_name: "My Image Creator AI",
-      version: "1.0",
-      response_time: `${Date.now() - req.startTime}ms`
-    });
-
+    res.json(result);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: "My AI is currently busy. Please try again in a moment.",
-      ai_name: "My Image Creator AI"
-    });
+    res.status(500).json({ error: "Please try again" });
   }
 });
 
-// Batch image generation
-app.post("/ai/generate-batch", async (req, res) => {
-  const { prompts } = req.body;
-  
-  if (!prompts || !Array.isArray(prompts)) {
-    return res.status(400).json({ 
-      error: "Array of prompts required" 
-    });
-  }
-
-  try {
-    const results = [];
-    
-    for (let prompt of prompts) {
-      const result = await myAI.generateImage(prompt);
-      results.push(result);
-    }
-    
-    res.json({
-      success: true,
-      batch_id: `batch_${Date.now()}`,
-      created_by: "My AI Image Creator",
-      results: results,
-      total_generated: results.length
-    });
-    
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: "Batch generation failed"
-    });
-  }
-});
-
-// AI status and capabilities
 app.get("/ai/status", (req, res) => {
   res.json({
-    ai_name: "My Image Creator AI",
-    version: "1.0.0",
+    name: "My AI Image Creator",
     status: "🟢 Online",
-    capabilities: [
-      "Image Generation from Text",
-      "Prompt Enhancement", 
-      "Multiple Service Integration",
-      "Batch Processing",
-      "Real-time Generation"
-    ],
-    supported_services: myAI.services.map(s => s.name),
-    endpoints: {
-      "POST /ai/generate": "Generate single image",
-      "POST /ai/generate-batch": "Generate multiple images",
-      "GET /ai/status": "AI status and capabilities"
-    },
-    usage_examples: {
-      single: `curl -X POST http://localhost:5000/ai/generate -H "Content-Type: application/json" -d '{"prompt":"a beautiful sunset"}'`,
-      batch: `curl -X POST http://localhost:5000/ai/generate-batch -H "Content-Type: application/json" -d '{"prompts":["sunset", "mountain", "ocean"]}'`
-    }
+    version: "1.0"
   });
 });
 
-// Demo your AI's capabilities
-app.get("/ai/demo", async (req, res) => {
-  const demoPrompts = [
-    "a futuristic city at night",
-    "a mystical forest with glowing plants",
-    "an astronaut floating in space",
-    "a dragon flying over mountains",
-    "a cyberpunk street market"
-  ];
+// HTML FRONTEND - This will work on mobile!
+app.get("/", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>My AI Image Creator</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+                font-family: Arial, sans-serif; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }
+            header {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }
+            h1 { font-size: 2.5em; margin-bottom: 10px; }
+            .subtitle { opacity: 0.9; }
+            
+            .chat-container {
+                padding: 0;
+            }
+            .chat-box {
+                height: 400px;
+                overflow-y: auto;
+                padding: 20px;
+                background: #f8f9fa;
+            }
+            .input-area {
+                display: flex;
+                padding: 20px;
+                background: white;
+                border-top: 1px solid #dee2e6;
+                gap: 10px;
+            }
+            .input-area input {
+                flex: 1;
+                padding: 15px;
+                border: 2px solid #e9ecef;
+                border-radius: 10px;
+                font-size: 16px;
+            }
+            .generate-btn {
+                padding: 15px 25px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            .message {
+                margin-bottom: 15px;
+                padding: 15px;
+                border-radius: 10px;
+                background: white;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            .user-msg { background: #007bff; color: white; margin-left: 20px; }
+            .ai-msg { background: #e9ecef; }
+            .ai-msg img { max-width: 100%; border-radius: 10px; margin-top: 10px; }
+            .loading { color: #666; font-style: italic; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>🤖 My AI Image Creator</h1>
+                <p class="subtitle">Generate images with AI - Works on Mobile!</p>
+            </header>
 
-  try {
-    const demoResults = [];
-    
-    for (let prompt of demoPrompts.slice(0, 2)) { // Just 2 for demo
-      const result = await myAI.generateImage(prompt);
-      demoResults.push({
-        original_prompt: prompt,
-        enhanced_prompt: result.enhanced_prompt,
-        image_url: result.image,
-        generated_by: result.created_by
-      });
-    }
-    
-    res.json({
-      ai_name: "My Image Creator AI",
-      demonstration: "Showing AI capabilities with sample generations",
-      features: [
-        "🤖 Intelligent prompt enhancement",
-        "🖼️ Multi-service image generation", 
-        "⚡ Real-time processing",
-        "🔧 Error handling & fallbacks"
-      ],
-      generated_images: demoResults,
-      try_it: "Use POST /ai/generate with your own prompts!"
-    });
-    
-  } catch (error) {
-    res.json({
-      ai_name: "My Image Creator AI", 
-      status: "Demo temporarily unavailable",
-      error: error.message
-    });
-  }
+            <div class="chat-container">
+                <div class="chat-box" id="chatBox">
+                    <div class="message ai-msg">
+                        <strong>AI:</strong> Welcome! Enter a prompt to generate images.
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <input type="text" id="promptInput" placeholder="Describe an image..." />
+                    <button onclick="generateImage()" class="generate-btn">Generate</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            async function generateImage() {
+                const prompt = document.getElementById('promptInput').value;
+                const chatBox = document.getElementById('chatBox');
+                const button = document.querySelector('.generate-btn');
+
+                if (!prompt) return;
+
+                // Add user message
+                chatBox.innerHTML += \`
+                    <div class="message user-msg">
+                        <strong>You:</strong> \${prompt}
+                    </div>
+                \`;
+
+                // Show loading
+                chatBox.innerHTML += \`
+                    <div class="message ai-msg">
+                        <div class="loading">🔄 Generating image...</div>
+                    </div>
+                \`;
+
+                button.disabled = true;
+                button.textContent = 'Generating...';
+
+                try {
+                    const response = await fetch('/ai/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ prompt })
+                    });
+
+                    const data = await response.json();
+
+                    // Remove loading
+                    chatBox.removeChild(chatBox.lastChild);
+
+                    if (data.success) {
+                        chatBox.innerHTML += \`
+                            <div class="message ai-msg">
+                                <strong>AI:</strong> Generated: "\${prompt}"
+                                <br>
+                                <img src="\${data.image}" alt="AI Generated" />
+                                <br>
+                                <small>Source: \${data.source}</small>
+                            </div>
+                        \`;
+                    } else {
+                        throw new Error(data.error);
+                    }
+                } catch (error) {
+                    chatBox.removeChild(chatBox.lastChild);
+                    chatBox.innerHTML += \`
+                        <div class="message ai-msg">
+                            <strong>AI:</strong> ❌ Failed to generate. Please try again.
+                        </div>
+                    \`;
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Generate';
+                    document.getElementById('promptInput').value = '';
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            }
+
+            // Enter key support
+            document.getElementById('promptInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') generateImage();
+            });
+        </script>
+    </body>
+    </html>
+  `);
 });
 
-// Add timing middleware
-app.use((req, res, next) => {
-  req.startTime = Date.now();
-  next();
-});
-
-app.listen(PORT, () => {
-  console.log(`🚀 MY AI IMAGE CREATOR running on http://localhost:${PORT}`);
-  console.log(`🤖 AI Status: http://localhost:${PORT}/ai/status`);
-  console.log(`🎨 Generate: http://localhost:${PORT}/ai/generate`);
-  console.log(`📦 Batch: http://localhost:${PORT}/ai/generate-batch`);
-  console.log(`👁️ Demo: http://localhost:${PORT}/ai/demo`);
-  console.log(`💡 Your own AI is ready!`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
