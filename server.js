@@ -1,6 +1,7 @@
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
+const path = require("path"); // <-- added for React build
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -251,6 +252,15 @@ app.get("/", (req, res) => {
     </html>
   `);
 });
+
+// ==================== ADDITION FOR RAILWAY: Serve React Build ====================
+app.use(express.static(path.join(__dirname, "build")));
+
+app.get(/^(?!\/ai).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
+
+// ============================================================================
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
