@@ -124,7 +124,7 @@ function App() {
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <h1 className="title">AI Image Generator</h1>
+          <h1 className="title">Nandhan's AI</h1>
           <button onClick={checkAIStatus} className="status-button">
             System Status
           </button>
