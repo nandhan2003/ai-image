@@ -15,9 +15,10 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  // FIXED: Use relative URLs for production
   const generateWithMyAI = async (userPrompt) => {
     try {
-      const response = await fetch("http://localhost:5000/ai/generate", {
+      const response = await fetch("/ai/generate", { // Removed localhost:5000
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -33,6 +34,18 @@ function App() {
       return await response.json();
     } catch (error) {
       throw new Error(error.message || "AI service unavailable");
+    }
+  };
+
+  // FIXED: Use relative URL for status
+  const checkAIStatus = async () => {
+    try {
+      const response = await fetch("/ai/status"); // Removed localhost:5000
+      if (!response.ok) throw new Error("Failed to fetch status");
+      const data = await response.json();
+      setAiStatus(data);
+    } catch (error) {
+      setAiStatus({ status: "Offline", error: error.message });
     }
   };
 
@@ -75,17 +88,6 @@ function App() {
     }
   };
 
-  const checkAIStatus = async () => {
-    try {
-      const response = await fetch("http://localhost:5000/ai/status");
-      if (!response.ok) throw new Error("Failed to fetch status");
-      const data = await response.json();
-      setAiStatus(data);
-    } catch (error) {
-      setAiStatus({ status: "Offline", error: error.message });
-    }
-  };
-
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !loading) {
       handleSend();
@@ -101,7 +103,7 @@ function App() {
       <div className="loading-screen">
         <div className="loading-content">
           <img 
-            src="profile.png" 
+            src="/profile.png" 
             alt="AI Profile" 
             className="profile-image"
             onError={(e) => {

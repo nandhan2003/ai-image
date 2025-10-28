@@ -1,7 +1,7 @@
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
-const path = require("path"); // <-- for React build
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -75,6 +75,9 @@ app.get("/ai/status", (req, res) => {
     version: "1.0"
   });
 });
+
+// Serve React build
+app.use(express.static(path.join(__dirname, "build")));
 
 // HTML FRONTEND - Works on mobile!
 app.get("/", (req, res) => {
@@ -228,12 +231,6 @@ app.get("/", (req, res) => {
     </body>
     </html>
   `);
-});
-
-// Serve React build
-app.use(express.static(path.join(__dirname, "build")));
-app.get(/^(?!\/ai).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, "build", "index.html"));
 });
 
 // Start server
